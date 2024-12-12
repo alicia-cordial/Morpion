@@ -24,19 +24,7 @@ concurrency:
 
   # a workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    name: Deploy
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-  
   notify_pull_request_google_chat:
-    needs: [deploy]
     runs-on: ubuntu-latest
     steps:
       - name: Notify Google Chat
@@ -59,8 +47,5 @@ jobs:
               {
                 "header": "Résultats des jobs",
                 "collapsible": true,
-                "widgets": [
-                  { "decoratedText": { "text": "- Deployment : ${{ needs.deploy.result }}" } }
-                ]
               }
             ]
