@@ -27,20 +27,21 @@ jobs:
         uses: SimonScholz/google-chat-action@main
         with:
           webhookUrl: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
-          title: ${{ 'Déploiement réussi sur Thotify ! 🚀' }}
-          subtitle: ${{  'Les modifications ont été fusionnées avec succès ! 😻' }}
+          title: "Déploiement réussi sur Thotify ! 🚀"
+          subtitle: "Les modifications ont été fusionnées avec succès ! 😻"
           additionalSections: |
-            [              
+            [
               {
                 "header": "Détails de la fusion",
                 "collapsible": true,
                 "widgets": [
-                  { "decoratedText": { "text": "- Titre du commit  : ${{github.event.commits[0].message}}" } },
-                  { "decoratedText": { "text": "- Auteur : ${{ github.event.commits[1].author.username }}" } }
+                  { "decoratedText": { "text": "- Titre du commit : ${{ github.event.commits[0].message }}" } },
+                  { "decoratedText": { "text": "- Auteur : ${{ github.event.commits[0].author.username }}" } }
                 ]
               },
               {
                 "header": "Résultats des jobs",
                 "collapsible": true,
+                "widgets": []
               }
             ]
