@@ -1,19 +1,115 @@
-name: GitHub Actions Demo
-run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
-on: [push]
+name: Deploy Astro site to Pages
+# push lance le fichier pour exécuter les différentes actions
+on:
+  push:
+    branches: ["main"]
+
+  # event trigger a workflow if workflow file is on default branch
+  workflow_dispatch:
+
+# modify default permissions granted by GITHUB_TOKEN.
+permissions:
+  contents: read # Work with contents of the repo. Permits an action to list the commits
+  pages: write # work with GitHub Pages. Permits an action to request a GitHub Pages build.
+  id-token: write # fetch OpenID Connect token.
+
+# permet de contrôler la concurrence des exécutions de flux de travail
+concurrency:
+  group: "pages" # permet de gérer et limiter l'exécution des flux de travail ou projets qui partagent la même clé de concurrence.
+  cancel-in-progress: false # pour annuler un projet en cours ou une exécution dans GitHub Actions.
+
+  # to define environment variables that are available to all jobs and steps in a workflow.
+env:
+  BUILD_PATH: "." 
+
+  # a workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  Explore-GitHub-Actions:
+  # this workflow contains a single job called build
+  build:
+    name: Build
+    # the type of runner that the job will run on // create a VM on ubuntu then destroyes it // light
+    runs-on: ubuntu-latest
+    # represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Checkout
+      # check-out your repository under $GITHUB_WORKSPACE
+        uses: actions/checkout@v4
+        # runs a single command using the runners shell
+      - name: Detect package manager
+        id: detect-package-manager
+        run: |
+          if [ -f "${{ github.workspace }}/yarn.lock" ]; then
+            echo "manager=yarn" >> $GITHUB_OUTPUT
+            echo "command=install" >> $GITHUB_OUTPUT
+            echo "runner=yarn" >> $GITHUB_OUTPUT
+            echo "lockfile=yarn.lock" >> $GITHUB_OUTPUT
+            exit 0
+          elif [ -f "${{ github.workspace }}/package.json" ]; then
+            echo "manager=npm" >> $GITHUB_OUTPUT
+            echo "command=ci" >> $GITHUB_OUTPUT
+            echo "runner=npx --no-install" >> $GITHUB_OUTPUT
+            echo "lockfile=package-lock.json" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "Unable to determine package manager"
+            exit 1
+          fi
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Install dependencies
+        run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
+        working-directory: ${{ env.BUILD_PATH }}
+      - name: Build with Astro
+        run: |
+          ${{ steps.detect-package-manager.outputs.runner }} astro build \
+            --site "${{ steps.pages.outputs.origin }}" \
+            --base "${{ steps.pages.outputs.base_path }}"
+        working-directory: ${{ env.BUILD_PATH }}
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ env.BUILD_PATH }}/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+  
+  notify_pull_request_google_chat:
+    needs: [build, deploy]
     runs-on: ubuntu-latest
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
-      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
-      - name: List files in the repository
-        run: |
-          ls ${{ github.workspace }}
-      - run: echo "🍏 This job's status is ${{ job.status }}."
-
+      - name: Notify Google Chat
+        if: ${{ always() }} # Utilisez 'always' pour vous assurer que la notification est envoyée même en cas d'échec des étapes précédentes
+        uses: SimonScholz/google-chat-action@main
+        with:
+          webhookUrl: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL}}
+          title: ${{ needs.build.result == 'success' && needs.deploy.result == 'success' && 'Déploiement réussi sur Thotify ! 🚀' || 'Échec du déploiement sur Thotify ❌' }}
+          subtitle: ${{ needs.build.result == 'success' && needs.deploy.result =='success' && 'Les modifications ont été fusionnées avec succès ! 😻' || 'Il y à eu une erreur lors de la mise en ligne..' }}
+          additionalSections: |
+            [              
+              {
+                "header": "Détails de la fusion",
+                "collapsible": true,
+                "widgets": [
+                  { "decoratedText": { "text": "- Titre du commit  : ${{github.event.commits[0].message}}" } },
+                  { "decoratedText": { "text": "- Auteur : ${{ github.event.commits[1].author.username }}" } }
+                ]
+              },
+              {
+                "header": "Résultats des jobs",
+                "collapsible": true,
+                "widgets": [
+                  { "decoratedText": { "text": "- Build : ${{ needs.build.result }}" } },
+                  { "decoratedText": { "text": "- Deployment : ${{ needs.deploy.result }}" } }
+                ]
+              }
+            ]
