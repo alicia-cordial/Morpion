@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Google Chat
-        if: ${{ always() }} # Utilisez 'always' pour vous assurer que la notification est envoyée même en cas d'échec des étapes précédentes
+        if: ${{ always() }}
         uses: SimonScholz/google-chat-action@main
         with:
           webhookUrl: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL}}
