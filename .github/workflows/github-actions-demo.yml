@@ -19,28 +19,16 @@ env:
   BUILD_PATH: "." 
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    name: Deploy
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-  
   notify_pull_request_google_chat:
-    needs: [deploy]
     runs-on: ubuntu-latest
     steps:
       - name: Notify Google Chat
-        if: ${{ always() }} # Utilisez 'always' pour vous assurer que la notification est envoyée même en cas d'échec des étapes précédentes
+        if: ${{ always() }} 
         uses: SimonScholz/google-chat-action@main
         with:
           webhookUrl: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL }}
-          title: ${{ needs.deploy.result == 'success' && 'Déploiement réussi sur Thotify ! 🚀' || 'Échec du déploiement sur Thotify ❌' }}
-          subtitle: ${{ needs.deploy.result =='success' && 'Les modifications ont été fusionnées avec succès ! 😻' || 'Il y à eu une erreur lors de la mise en ligne..' }}
+          title: ${{ 'Déploiement réussi sur Thotify ! 🚀' }}
+          subtitle: ${{  'Les modifications ont été fusionnées avec succès ! 😻' }}
           additionalSections: |
             [              
               {
@@ -54,8 +42,5 @@ jobs:
               {
                 "header": "Résultats des jobs",
                 "collapsible": true,
-                "widgets": [
-                  { "decoratedText": { "text": "- Deployment : ${{ needs.deploy.result }}" } }
-                ]
               }
             ]
