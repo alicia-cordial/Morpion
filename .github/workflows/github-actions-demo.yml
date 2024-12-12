@@ -1,39 +1,27 @@
 name: Deploy Astro site to Pages
-# push lance le fichier pour exécuter les différentes actions
-on:
+'on':
   push:
-    branches: ["main"]
-
-  # event trigger a workflow if workflow file is on default branch
-  workflow_dispatch:
-
-# modify default permissions granted by GITHUB_TOKEN.
+    branches:
+      - main
+  workflow_dispatch: null
 permissions:
-  contents: read # Work with contents of the repo. Permits an action to list the commits
-  pages: write # work with GitHub Pages. Permits an action to request a GitHub Pages build.
-  id-token: write # fetch OpenID Connect token.
-
-# permet de contrôler la concurrence des exécutions de flux de travail
+  contents: read
+  pages: write
+  id-token: write
 concurrency:
-  group: "pages" # permet de gérer et limiter l'exécution des flux de travail ou projets qui partagent la même clé de concurrence.
-  cancel-in-progress: false # pour annuler un projet en cours ou une exécution dans GitHub Actions.
-
-  # to define environment variables that are available to all jobs and steps in a workflow.
-# env:
-#   BUILD_PATH: "." 
-
-  # a workflow run is made up of one or more jobs that can run sequentially or in parallel
+  group: pages
+  cancel-in-progress: false
 jobs:
   notify_pull_request_google_chat:
     runs-on: ubuntu-latest
     steps:
       - name: Notify Google Chat
-        if: ${{ always() }}
+        if: '${{ always() }}'
         uses: SimonScholz/google-chat-action@main
         with:
-          webhookUrl: ${{ secrets.GOOGLE_CHAT_WEBHOOK_URL}}
-          title: "hello" 
-          subtitle: "goodbye" 
+          webhookUrl: '${{ secrets.GOOGLE_CHAT_WEBHOOK_URL}}'
+          title: hello
+          subtitle: goodbye
           additionalSections: |
             [              
               {
