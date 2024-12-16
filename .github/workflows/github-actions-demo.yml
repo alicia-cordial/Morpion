@@ -19,6 +19,46 @@ env:
   BUILD_PATH: "." 
 
 jobs:
+  create-tag:
+    name: Create Tag
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Set up Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+      
+      - name: Get current date
+        id: date
+        run: echo "date=$(date = '%Y.%m.%d')" >> $GITHUB_ENV
+      
+      - name: Generate tag name
+        id: tag
+        run: |
+          TAG_DATE=${{ env.date }}
+          TAG_EXIST=$(git tag -l "v$TAG_DATE.*" | wc -l)
+          if [ "$TAG_EXIST" -eq ]; then
+            echo "tag=v$TAG_DATE.0" >> $GITHUB_ENV
+          else
+            NEXT_TAG=$(($TAG_EXIST))
+            echo "tag=v$TAG_DATE.$NEXT_TAG" >> $GITHUB_ENV
+          fi
+      
+      - name: Create and push tag
+        env:
+          TAG: ${{ env.tag }}
+        run: |
+          git tag $TAG
+          git push origin $TAG
+      
+      - name: Confirm tag created
+        run: |
+          echo "Tag ${{ env.tag }} created and pushed"
+
   notify_pull_request_google_chat:
     runs-on: ubuntu-latest
     steps:

@@ -2,5 +2,4 @@ print("hello")
 
 ok = "hello"
 print("bye !!!!")
-testttttttt
-fhhfhfhfh
+print(ok)
